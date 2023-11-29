@@ -618,7 +618,7 @@ static const struct sensor_device_attribute *emc2305_fan_attrs[] = {
  * driver interface
  */
 
-static int emc2305_remove(struct i2c_client *client)
+static void emc2305_remove(struct i2c_client *client)
 {
 	struct emc2305_data *data = i2c_get_clientdata(client);
 	int fan_idx, i;
@@ -636,7 +636,6 @@ static int emc2305_remove(struct i2c_client *client)
 				   &emc2305_attr_common[i].dev_attr);
 
 	kfree(data);
-	return 0;
 }
 
 
@@ -742,6 +741,7 @@ emc2305_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	int status;
 	int i;
 	int fan_idx;
+	unsigned char dis_to = 0;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
 		return -EIO;
@@ -752,6 +752,11 @@ emc2305_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	i2c_set_clientdata(client, data);
 	mutex_init(&data->update_lock);
+	
+	dis_to = i2c_smbus_read_byte_data(client, REG_CONFIGURATION);
+	dis_to &= 0xBF;
+	/* The SMBus timeout function is enabled */
+	(void)i2c_smbus_write_byte_data(client, REG_CONFIGURATION, dis_to);
 
 	status = i2c_smbus_read_byte_data(client, REG_PRODUCT_ID);
 	switch (status) {

@@ -9,7 +9,7 @@
  *
  */
 /*
- * $Copyright: Copyright 2018-2020 Broadcom. All rights reserved.
+ * $Copyright: Copyright 2018-2022 Broadcom. All rights reserved.
  * The term 'Broadcom' refers to Broadcom Inc. and/or its subsidiaries.
  * 
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,14 @@
 #ifndef NGKNET_DEV_H
 #define NGKNET_DEV_H
 
-#include <bcmcnet/bcmcnet_types.h>
+#include <lkm/ngbde_kapi.h>
+
+/*! Maximum number of devices supported */
+#ifdef NGBDE_NUM_SWDEV_MAX
+#define NUM_PDMA_DEV_MAX        NGBDE_NUM_SWDEV_MAX
+#else
+#define NUM_PDMA_DEV_MAX        16
+#endif
 
 /*! Device name length */
 #define NGKNET_DEV_NAME_MAX     16
@@ -168,6 +175,9 @@ typedef struct ngknet_netif_s {
  *  NGKNET_FILTER_DEST_T_VNET
  *  Packet is sent to VNET in user space.
  *
+ *  NGKNET_FILTER_DEST_T_CB
+ *  Packet is sent to kernel filter call-back function for further filtering.
+ *
  * Filter flags:
  *
  *  NGKNET_FILTER_F_ANY_DATA
@@ -198,8 +208,8 @@ typedef struct ngknet_netif_s {
 #define NGKNET_FILTER_DEST_T_NETIF  1
 /*! Send packet to VNET */
 #define NGKNET_FILTER_DEST_T_VNET   2
-/*! Send packet to kernel callback function (BCMPKT_DEST_T_CALLBACK) */
-#define NGKNET_FILTER_DEST_T_CB     3 
+/*! Send packet to kernel filter call-back function */
+#define NGKNET_FILTER_DEST_T_CB     3
 
 /*! Match any data */
 #define NGKNET_FILTER_F_ANY_DATA    (1U << 0)
@@ -282,6 +292,20 @@ typedef struct ngknet_filter_s {
 } ngknet_filter_t;
 
 /*!
+ * \brief Device information.
+ */
+typedef struct ngknet_dev_info_s {
+    /*! Device number (from BDE) */
+    int dev_no;
+
+    /*! Device type string */
+    char type_str[NGKNET_DEV_NAME_MAX];
+
+    /*! Device variant string */
+    char var_str[NGKNET_DEV_NAME_MAX];
+} ngknet_dev_info_t;
+
+/*!
  * \brief Device configure structure.
  */
 typedef struct ngknet_dev_cfg_s {
@@ -291,11 +315,14 @@ typedef struct ngknet_dev_cfg_s {
     /*! Device type string */
     char type_str[NGKNET_DEV_NAME_MAX];
 
+    /*! Device variant string */
+    char var_str[NGKNET_DEV_NAME_MAX];
+
     /*! Device ID */
     uint32_t dev_id;
 
     /*! Device mode */
-    dev_mode_t mode;
+    int mode;
 
     /*! Number of groups */
     uint32_t nb_grp;
@@ -403,6 +430,8 @@ struct ngknet_rcpu_hdr {
 #define RCPU_FLAG_MODHDR        (1 << 2)
 /*! RCPU bind queue flag */
 #define RCPU_FLAG_BIND_QUE      (1 << 3)
+/*! RCPU no pad flag */
+#define RCPU_FLAG_NO_PAD        (1 << 4)
 
 #endif /* NGKNET_DEV_H */
 

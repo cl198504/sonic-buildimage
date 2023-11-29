@@ -4,7 +4,7 @@
  *
  */
 /*
- * $Copyright: Copyright 2018-2020 Broadcom. All rights reserved.
+ * $Copyright: Copyright 2018-2022 Broadcom. All rights reserved.
  * The term 'Broadcom' refers to Broadcom Inc. and/or its subsidiaries.
  * 
  * This program is free software; you can redistribute it and/or
@@ -23,17 +23,11 @@
 #ifndef NGKNET_MAIN_H
 #define NGKNET_MAIN_H
 
+#include <linux/ethtool.h>
 #include <linux/netdevice.h>
 #include <lkm/lkm.h>
 #include <lkm/ngknet_dev.h>
 #include <bcmcnet/bcmcnet_core.h>
-
-/*! Maximum number of PDMA devices supported */
-#ifdef NGBDE_NUM_SWDEV_MAX
-#define NUM_PDMA_DEV_MAX    NGBDE_NUM_SWDEV_MAX
-#else
-#define NUM_PDMA_DEV_MAX    16
-#endif
 
 /*!
  * Debug levels
@@ -68,6 +62,9 @@
  * Device description
  */
 struct ngknet_dev {
+    /* Device information */
+    ngknet_dev_info_t dev_info;
+
     /*! Base address for PCI register access */
     volatile void *base_addr;
 
@@ -83,14 +80,11 @@ struct ngknet_dev {
     /*! PDMA device */
     struct pdma_dev pdma_dev;
 
-    /*! Device number (from BDE) */
-    int dev_no;
-
-    /*! Vitual network devices, 0 is reserved */
+    /*! Virtual network devices, 0 is reserved for valid number of devices. */
     struct net_device *vdev[NUM_VDEV_MAX + 1];
 
-    /*! Vitual network devices bound to queue */
-    struct net_device *bdev[NUM_QUE_MAX];
+    /*! Virtual network devices bound to queue */
+    struct net_device *bdev[NUM_Q_MAX];
 
     /*! Filter list */
     struct list_head filt_list;
@@ -153,32 +147,8 @@ struct ngknet_private {
     /*! NGKNET device */
     struct ngknet_dev *bkn_dev;
 
-    /*! Network interface ID */
-    int id;
-
-    /*! Network interface type */
-    int type;
-
-    /*! Network interface flags */
-    uint32_t flags;
-
-    /*! Network interface vlan */
-    uint32_t vlan;
-
-    /*! Network interface bound to */
-    uint32_t chan;
-
-    /*! Metadata offset from Ethernet header */
-    uint32_t meta_off;
-
-    /*! Metadata length */
-    uint32_t meta_len;
-
-    /*! Metadata used to send packets to physical port */
-    uint8_t meta_data[NGKNET_NETIF_META_MAX];
-
-    /*! User data gotten back through callbacks */
-    uint8_t user_data[NGKNET_NETIF_USER_DATA];
+    /*! Network interface */
+    ngknet_netif_t netif;
 
     /*! Users of this network interface */
     int users;
@@ -191,6 +161,13 @@ struct ngknet_private {
 
     /*! HW timestamp Tx type */
     int hwts_tx_type;
+
+#if NGKNET_ETHTOOL_LINK_SETTINGS
+    /* Link settings */
+    struct ethtool_link_settings link_settings;
+#endif
+        /*! Matched callback filter */
+    struct ngknet_filter_s *filt_cb;
 };
 
 /*!
@@ -273,6 +250,14 @@ ngknet_rx_rate_limit_get(void);
  */
 extern void
 ngknet_rx_rate_limit_set(int rate_limit);
+
+/*!
+ * \brief Get page buffer mode.
+ *
+ * \retval Current page buffer mode.
+ */
+extern int
+ngknet_page_buffer_mode_get(void);
 
 #endif /* NGKNET_MAIN_H */
 

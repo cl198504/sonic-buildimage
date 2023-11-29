@@ -58,6 +58,7 @@
 #define KCOM_M_ETH_HW_CONFIG    5  /* ETH HW config*/
 #define KCOM_M_DETACH           6  /* Detach kernel module */
 #define KCOM_M_REPROBE          7  /* Reprobe device */
+#define KCOM_M_HW_INFO          8  /* Send the HW info to kernel module */
 #define KCOM_M_NETIF_CREATE     11 /* Create network interface */
 #define KCOM_M_NETIF_DESTROY    12 /* Destroy network interface */
 #define KCOM_M_NETIF_LIST       13 /* Get list of network interface IDs */
@@ -71,8 +72,9 @@
 #define KCOM_M_DBGPKT_GET       42 /* Get debug packet function info */
 #define KCOM_M_WB_CLEANUP       51 /* Clean up for warmbooting */
 #define KCOM_M_CLOCK_CMD        52 /* Clock Commands */
+#define KCOM_M_PCIE_LINK_STATUS 53 /* PCIe link status */
 
-#define KCOM_VERSION            12 /* Protocol version */
+#define KCOM_VERSION            13 /* Protocol version */
 
 /*
  * Message status codes
@@ -299,7 +301,7 @@ typedef struct kcom_dma_info_s {
         void *p;
         uint8 b[8];
     } cookie;
-  } kcom_dma_info_t;
+} kcom_dma_info_t;
 
 /* Default channel configuration */
 #define KCOM_DMA_TX_CHAN        0
@@ -331,6 +333,18 @@ typedef struct kcom_eth_hw_config_s {
     uint32 value;
 } kcom_eth_hw_config_t;
 
+#ifndef KCOM_HW_INFO_OAMP_PORT_MAX
+#define KCOM_HW_INFO_OAMP_PORT_MAX     4
+#endif
+
+/*
+ * Send the OAMP information to Kernel module.
+ */
+typedef struct kcom_oamp_info_s {
+    uint32 oamp_port_number;
+    uint32 oamp_ports[KCOM_HW_INFO_OAMP_PORT_MAX];
+} kcom_oamp_info_t;
+
 /*
  * Message types
  */
@@ -354,6 +368,7 @@ typedef struct kcom_msg_version_s {
 #define KSYNC_M_HW_TS_DISABLE      3
 #define KSYNC_M_MTP_TS_UPDATE_ENABLE  4
 #define KSYNC_M_MTP_TS_UPDATE_DISABLE 5
+#define KSYNC_M_DNX_JR2DEVS_SYS_CONFIG 6
 
 typedef struct kcom_clock_info_s {
     uint8 cmd;
@@ -419,8 +434,14 @@ typedef struct kcom_msg_hw_init_s {
     uint32 udh_size;
     uint32 oamp_punted;
     uint8 no_skip_udh_check;
+    uint8 oam_dm_tod_exist;
     uint8 system_headers_mode;
     uint8 udh_enable;
+    /*
+     * Bitmap of DMA channels reserved for the user mode network driver.
+     * These channels cannot be used by the kernel network driver (KNET).
+     */
+    uint32 unet_channels;
 } kcom_msg_hw_init_t;
 
 /*
@@ -462,6 +483,18 @@ typedef struct kcom_msg_wb_cleanup_s {
     kcom_msg_hdr_t hdr;
     uint32 flags;
 } kcom_msg_wb_cleanup_t;
+
+/* PCIE Link status */
+#define PCIE_LINK_STATUS_UP             0x0
+#define PCIE_LINK_STATUS_DOWN           0x1
+
+/*
+ * Update PCIe link status.
+ */
+typedef struct kcom_msg_pcie_link_status_s {
+    kcom_msg_hdr_t hdr;
+    int pcie_link_status;
+} kcom_msg_pcie_link_status_t;
 
 /*
  * Create new system network interface. The network interface will
@@ -555,6 +588,14 @@ typedef struct kcom_msg_dma_info_s {
 } kcom_msg_dma_info_t;
 
 /*
+ * HW info
+ */
+typedef struct kcom_msg_hw_info_s {
+    kcom_msg_hdr_t hdr;
+    kcom_oamp_info_t oamp_info;
+} kcom_msg_hw_info_t;
+
+/*
  * All messages (e.g. for generic receive)
  */
 typedef union kcom_msg_s {
@@ -564,6 +605,7 @@ typedef union kcom_msg_s {
     kcom_msg_hw_reset_t hw_reset;
     kcom_msg_hw_init_t hw_init;
     kcom_msg_eth_hw_config_t eth_hw_config;
+    kcom_msg_hw_info_t hw_info;
     kcom_msg_detach_t detach;
     kcom_msg_reprobe_t reprobe;
     kcom_msg_netif_create_t netif_create;
@@ -579,6 +621,7 @@ typedef union kcom_msg_s {
     kcom_msg_dbg_pkt_get_t dbg_pkt_get;
     kcom_msg_wb_cleanup_t wb_cleanup;
     kcom_msg_clock_cmd_t clock_cmd;
+    kcom_msg_pcie_link_status_t pcie_link_status;
 } kcom_msg_t;
 
 /*

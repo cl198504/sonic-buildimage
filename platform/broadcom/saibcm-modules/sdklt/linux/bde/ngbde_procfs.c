@@ -4,7 +4,7 @@
  *
  */
 /*
- * $Copyright: Copyright 2018-2020 Broadcom. All rights reserved.
+ * $Copyright: Copyright 2018-2022 Broadcom. All rights reserved.
  * The term 'Broadcom' refers to Broadcom Inc. and/or its subsidiaries.
  * 
  * This program is free software; you can redistribute it and/or
@@ -88,12 +88,12 @@ proc_release(struct inode *inode, struct file *file)
     return single_release(inode, file);
 }
 
-static struct file_operations proc_fops = {
-    owner:      THIS_MODULE,
-    open:       proc_open,
-    read:       seq_read,
-    llseek:     seq_lseek,
-    release:    proc_release,
+struct proc_ops proc_fops = {
+    PROC_OWNER(THIS_MODULE)
+    .proc_open =        proc_open,
+    .proc_read =        seq_read,
+    .proc_lseek =       seq_lseek,
+    .proc_release =     proc_release,
 };
 
 int

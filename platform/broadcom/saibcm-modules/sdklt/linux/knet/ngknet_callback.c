@@ -4,7 +4,7 @@
  *
  */
 /*
- * $Copyright: Copyright 2018-2020 Broadcom. All rights reserved.
+ * $Copyright: Copyright 2018-2022 Broadcom. All rights reserved.
  * The term 'Broadcom' refers to Broadcom Inc. and/or its subsidiaries.
  * 
  * This program is free software; you can redistribute it and/or
@@ -34,13 +34,29 @@ ngknet_callback_control_get(struct ngknet_callback_ctrl **cbc)
 
 /*!
  * Call-back interfaces for other Linux kernel drivers.
- *
- * The Rx call-back allows an external module to modify packet contents
- * before it is handed off to the Linux network stack.
- *
- * The Tx call-back allows an external module to modify packet contents
- * before it is injected into the switch.
  */
+
+int
+ngknet_dev_init_cb_register(ngknet_dev_init_cb_f dev_init_cb)
+{
+    if (callback_ctrl.dev_init_cb != NULL) {
+        return -1;
+    }
+    callback_ctrl.dev_init_cb = dev_init_cb;
+
+    return 0;
+}
+
+int
+ngknet_dev_init_cb_unregister(ngknet_dev_init_cb_f dev_init_cb)
+{
+    if (dev_init_cb == NULL || callback_ctrl.dev_init_cb != dev_init_cb) {
+        return -1;
+    }
+    callback_ctrl.dev_init_cb = NULL;
+
+    return 0;
+}
 
 int
 ngknet_rx_cb_register(ngknet_rx_cb_f rx_cb)
@@ -82,6 +98,72 @@ ngknet_tx_cb_unregister(ngknet_tx_cb_f tx_cb)
         return -1;
     }
     callback_ctrl.tx_cb = NULL;
+
+    return 0;
+}
+
+int
+ngknet_netif_create_cb_register(ngknet_netif_cb_f netif_cb)
+{
+    if (callback_ctrl.netif_create_cb != NULL) {
+        return -1;
+    }
+    callback_ctrl.netif_create_cb = netif_cb;
+
+    return 0;
+}
+
+int
+ngknet_netif_create_cb_unregister(ngknet_netif_cb_f netif_cb)
+{
+    if (netif_cb == NULL || callback_ctrl.netif_create_cb != netif_cb) {
+        return -1;
+    }
+    callback_ctrl.netif_create_cb = NULL;
+
+    return 0;
+}
+
+int
+ngknet_netif_destroy_cb_register(ngknet_netif_cb_f netif_cb)
+{
+    if (callback_ctrl.netif_destroy_cb != NULL) {
+        return -1;
+    }
+    callback_ctrl.netif_destroy_cb = netif_cb;
+
+    return 0;
+}
+
+int
+ngknet_netif_destroy_cb_unregister(ngknet_netif_cb_f netif_cb)
+{
+    if (netif_cb == NULL || callback_ctrl.netif_destroy_cb != netif_cb) {
+        return -1;
+    }
+    callback_ctrl.netif_destroy_cb = NULL;
+
+    return 0;
+}
+
+int
+ngknet_filter_cb_register(ngknet_filter_cb_f filter_cb)
+{
+    if (callback_ctrl.filter_cb != NULL) {
+        return -1;
+    }
+    callback_ctrl.filter_cb = filter_cb;
+
+    return 0;
+}
+
+int
+ngknet_filter_cb_unregister(ngknet_filter_cb_f filter_cb)
+{
+    if (filter_cb == NULL || callback_ctrl.filter_cb != filter_cb) {
+        return -1;
+    }
+    callback_ctrl.filter_cb = NULL;
 
     return 0;
 }
@@ -247,54 +329,18 @@ ngknet_ptp_dev_ctrl_cb_unregister(ngknet_ptp_dev_ctrl_cb_f ptp_dev_ctrl_cb)
     return 0;
 }
 
-int
-ngknet_netif_create_cb_register(ngknet_netif_cb_f netif_cb)
-{
-    if (callback_ctrl.netif_create_cb != NULL) {
-        return -1;
-    }
-    callback_ctrl.netif_create_cb = netif_cb;
-
-    return 0;
-}
-
-int
-ngknet_netif_create_cb_unregister(ngknet_netif_cb_f netif_cb)
-{
-    if (netif_cb == NULL || callback_ctrl.netif_create_cb != netif_cb) {
-        return -1;
-    }
-    callback_ctrl.netif_create_cb = NULL;
-
-    return 0;
-}
-
-int
-ngknet_netif_destroy_cb_register(ngknet_netif_cb_f netif_cb)
-{
-    if (callback_ctrl.netif_destroy_cb != NULL) {
-        return -1;
-    }
-    callback_ctrl.netif_destroy_cb = netif_cb;
-
-    return 0;
-}
-
-int
-ngknet_netif_destroy_cb_unregister(ngknet_netif_cb_f netif_cb)
-{
-    if (netif_cb == NULL || callback_ctrl.netif_destroy_cb != netif_cb) {
-        return -1;
-    }
-    callback_ctrl.netif_destroy_cb = NULL;
-
-    return 0;
-}
-
+EXPORT_SYMBOL(ngknet_dev_init_cb_register);
+EXPORT_SYMBOL(ngknet_dev_init_cb_unregister);
 EXPORT_SYMBOL(ngknet_rx_cb_register);
 EXPORT_SYMBOL(ngknet_rx_cb_unregister);
 EXPORT_SYMBOL(ngknet_tx_cb_register);
 EXPORT_SYMBOL(ngknet_tx_cb_unregister);
+EXPORT_SYMBOL(ngknet_netif_create_cb_register);
+EXPORT_SYMBOL(ngknet_netif_create_cb_unregister);
+EXPORT_SYMBOL(ngknet_netif_destroy_cb_register);
+EXPORT_SYMBOL(ngknet_netif_destroy_cb_unregister);
+EXPORT_SYMBOL(ngknet_filter_cb_register);
+EXPORT_SYMBOL(ngknet_filter_cb_unregister);
 EXPORT_SYMBOL(ngknet_ptp_rx_config_set_cb_register);
 EXPORT_SYMBOL(ngknet_ptp_rx_config_set_cb_unregister);
 EXPORT_SYMBOL(ngknet_ptp_tx_config_set_cb_register);
@@ -309,7 +355,4 @@ EXPORT_SYMBOL(ngknet_ptp_phc_index_get_cb_register);
 EXPORT_SYMBOL(ngknet_ptp_phc_index_get_cb_unregister);
 EXPORT_SYMBOL(ngknet_ptp_dev_ctrl_cb_register);
 EXPORT_SYMBOL(ngknet_ptp_dev_ctrl_cb_unregister);
-EXPORT_SYMBOL(ngknet_netif_create_cb_register);
-EXPORT_SYMBOL(ngknet_netif_create_cb_unregister);
-EXPORT_SYMBOL(ngknet_netif_destroy_cb_register);
-EXPORT_SYMBOL(ngknet_netif_destroy_cb_unregister); 
+
